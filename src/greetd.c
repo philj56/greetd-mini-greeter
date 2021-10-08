@@ -1,5 +1,7 @@
+#include "greetd.h"
 #include "ipc.h"
 #include <json-c/json_object.h>
+#include <string.h>
 
 struct json_object *greetd_create_session(const char *username)
 {
@@ -43,7 +45,7 @@ struct json_object *greetd_start_session(const char *command)
 	struct json_object *arr = json_object_new_array_ext(1);
 	struct json_object *cmd = json_object_new_string(command);
 	json_object_array_add(arr, cmd);
-	json_object_object_add(request, "cmd", cmd);
+	json_object_object_add(request, "cmd", arr);
 
 	struct json_object *resp = ipc_submit(request);
 	json_object_put(request);
@@ -60,4 +62,37 @@ struct json_object *greetd_cancel_session(void)
 	struct json_object *resp = ipc_submit(request);
 	json_object_put(request);
 	return resp;
+}
+
+enum greetd_response_type greetd_parse_response_type(struct json_object *response)
+{
+	const char *str = json_object_get_string(json_object_object_get(response, "type"));
+	if (!strcmp(str, "success")) {
+		return GREETD_RESPONSE_SUCCESS;
+	}
+	if (!strcmp(str, "error")) {
+		return GREETD_RESPONSE_ERROR;
+	}
+	if (!strcmp(str, "auth_message")) {
+		return GREETD_RESPONSE_AUTH_MESSAGE;
+	}
+	return GREETD_RESPONSE_INVALID;
+}
+
+enum greetd_auth_message_type greetd_parse_auth_message_type(struct json_object *response)
+{
+	const char *str = json_object_get_string(json_object_object_get(response, "auth_message_type"));
+	if (!strcmp(str, "visible")) {
+		return GREETD_AUTH_MESSAGE_VISIBLE;
+	}
+	if (!strcmp(str, "invisible")) {
+		return GREETD_AUTH_MESSAGE_INVISIBLE;
+	}
+	if (!strcmp(str, "info")) {
+		return GREETD_AUTH_MESSAGE_INFO;
+	}
+	if (!strcmp(str, "error")) {
+		return GREETD_AUTH_MESSAGE_ERROR;
+	}
+	return GREETD_AUTH_MESSAGE_INVALID;
 }
