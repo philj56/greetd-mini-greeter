@@ -13,9 +13,9 @@ struct json_object *greetd_create_session(const char *username)
 	struct json_object *name = json_object_new_string(username);
 	json_object_object_add(request, "username", name);
 
-	struct json_object *response = ipc_submit(request);
+	struct json_object *resp = ipc_submit(request);
 	json_object_put(request);
-	return response;
+	return resp;
 }
 
 struct json_object *greetd_post_auth_message_response(const char *response)
@@ -85,8 +85,8 @@ enum greetd_auth_message_type greetd_parse_auth_message_type(struct json_object 
 	if (!strcmp(str, "visible")) {
 		return GREETD_AUTH_MESSAGE_VISIBLE;
 	}
-	if (!strcmp(str, "invisible")) {
-		return GREETD_AUTH_MESSAGE_INVISIBLE;
+	if (!strcmp(str, "secret")) {
+		return GREETD_AUTH_MESSAGE_SECRET;
 	}
 	if (!strcmp(str, "info")) {
 		return GREETD_AUTH_MESSAGE_INFO;
@@ -95,4 +95,16 @@ enum greetd_auth_message_type greetd_parse_auth_message_type(struct json_object 
 		return GREETD_AUTH_MESSAGE_ERROR;
 	}
 	return GREETD_AUTH_MESSAGE_INVALID;
+}
+
+enum greetd_error_type greetd_parse_error_type(struct json_object *response)
+{
+	const char *str = json_object_get_string(json_object_object_get(response, "error_type"));
+	if (!strcmp(str, "auth_error")) {
+		return GREETD_ERROR_AUTH_ERROR;
+	}
+	if (!strcmp(str, "error")) {
+		return GREETD_ERROR_ERROR;
+	}
+	return GREETD_ERROR_INVALID;
 }

@@ -3,7 +3,7 @@ project(
   'c',
   license: 'MIT',
   default_options: [
-    'c_std=c11',
+    'c_std=c2x',
     'optimization=3',
     'buildtype=release',
     'warning_level=3',

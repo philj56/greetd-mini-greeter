@@ -11,17 +11,39 @@
 						<property name="halign">center</property>
 						<property name="valign">center</property>
 						<property name="homogeneous">true</property>
-						<property name="orientation">horizontal</property>
+						<property name="orientation">vertical</property>
 						<child>
 							<object id="message" class="GtkLabel">
-								<property name="label">Entry:</property>
 								<property name="visible">false</property>
 							</object>
 						</child>
 						<child>
-							<object id="entry" class="GtkPasswordEntry">
+							<object id="password" class="GtkPasswordEntry">
 								<property name="halign">center</property>
 								<property name="valign">center</property>
+								<property name="visible">false</property>
+							</object>
+						</child>
+						<child>
+							<object id="plaintext" class="GtkEntry">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+								<property name="visible">false</property>
+							</object>
+						</child>
+						<child>
+							<object id="error" class="GtkLabel">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+								<property name="visible">false</property>
+							</object>
+						</child>
+						<child>
+							<object id="ok" class="GtkButton">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+								<property name="label">OK</property>
+								<property name="visible">false</property>
 							</object>
 						</child>
 					</object>

@@ -1,24 +1,33 @@
 #include "greetd.h"
-#include <json-c/json_object.h>
-#include <stdio.h>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
+#include <json-c/json_object.h>
+#include <stdio.h>
 
 static void initialise(GtkApplication *app, gpointer data);
-static void handle_options(GtkApplication *app, GVariantDict *options, gpointer data);
-static void on_submit_password(GtkPasswordEntry *entry, gpointer data);
+static void on_submit_answer(GtkPasswordEntry *entry, gpointer data);
+static void on_confirm(GtkButton *button, gpointer data);
 static void set_label_to_field(struct json_object *object, const char *field);
+static void set_error_to_field(struct json_object *object, const char *field);
 static void create_session(void);
+static void post_auth_message_response(const char *response);
+static void start_session(void);
+static void cancel_session(void);
 static void restart_session(void);
 
 static struct {
 	GtkApplication *app;
 	GtkLabel *label;
-	GtkPasswordEntry *entry;
-	struct json_object *response;
+	GtkLabel *error;
+	GtkPasswordEntry *password;
+	GtkEntry *plaintext;
+	GtkButton *ok;
 	const char *user;
 	const char *command;
-} greeter;
+} greeter = {
+	.user = "nobody",
+	.command = "false",
+};
 
 static GOptionEntry entries[2] = {
 	{"user", 'u', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &greeter.user, "The user to login as", ""},
@@ -29,7 +38,6 @@ int main(int argc, char **argv)
 {
 	GtkApplication *app = gtk_application_new("com.philj56.greetd-mini-greeter", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect(app, "activate", G_CALLBACK(initialise), NULL);
-	g_signal_connect(app, "handle-local-options", G_CALLBACK(handle_options), NULL);
 
 	g_application_add_main_option_entries(G_APPLICATION(app), entries);
 
@@ -55,95 +63,140 @@ void initialise(GtkApplication *app, gpointer data)
 	gtk_window_set_application(GTK_WINDOW(window), app);
 
 	greeter.label = GTK_LABEL(gtk_builder_get_object(builder, "message"));
-
-	greeter.entry = GTK_PASSWORD_ENTRY(gtk_builder_get_object(builder, "entry"));
+	greeter.error = GTK_LABEL(gtk_builder_get_object(builder, "error"));
+	greeter.password = GTK_PASSWORD_ENTRY(gtk_builder_get_object(builder, "password"));
+	greeter.plaintext = GTK_ENTRY(gtk_builder_get_object(builder, "plaintext"));
+	greeter.ok = GTK_BUTTON(gtk_builder_get_object(builder, "ok"));
 
 	GdkDisplay *display = gtk_widget_get_display(window);
 	GtkCssProvider *css = gtk_css_provider_new();
 	gtk_css_provider_load_from_path(css, GTK_CSS_PATH);
 	gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
-	g_signal_connect(G_OBJECT(greeter.entry), "activate", G_CALLBACK(on_submit_password), app);
+	g_signal_connect(G_OBJECT(greeter.password), "activate", G_CALLBACK(on_submit_answer), app);
+	g_signal_connect(G_OBJECT(greeter.plaintext), "activate", G_CALLBACK(on_submit_answer), app);
+	g_signal_connect(G_OBJECT(greeter.ok), "clicked", G_CALLBACK(on_confirm), app);
 
 	gtk_widget_show(window);
-	gtk_window_fullscreen(GTK_WINDOW(window));
 	create_session();
 }
 
-void handle_options(GtkApplication *app, GVariantDict *options, gpointer data)
+void on_submit_answer(GtkPasswordEntry *entry, gpointer data)
 {
-	GVariant *user = g_variant_dict_lookup_value(options, "user", G_VARIANT_TYPE_STRING);
-	if (user == NULL) {
-		fprintf(stderr, "A user must be specified with -u / --user\n");
-		greeter.user = "nobody";
-	} else {
-		greeter.user = g_variant_dup_string(user, NULL);
-	}
-	GVariant *command = g_variant_dict_lookup_value(options, "command", G_VARIANT_TYPE_STRING);
-	if (user == NULL) {
-		fprintf(stderr, "A command must be specified with -c / --command\n");
-		greeter.command = "false";
-	} else {
-		greeter.command = g_variant_dup_string(command, NULL);
-	}
+	post_auth_message_response(gtk_editable_get_text(GTK_EDITABLE(entry)));
 }
 
-void on_submit_password(GtkPasswordEntry *entry, gpointer data)
+void on_confirm(GtkButton *button, gpointer data)
 {
-	json_object_put(greeter.response);
-	greeter.response = greetd_post_auth_message_response(gtk_editable_get_text(GTK_EDITABLE(entry)));
-	switch (greetd_parse_response_type(greeter.response)) {
-		case GREETD_RESPONSE_SUCCESS:
-			json_object_put(greeter.response);
-			greetd_start_session(greeter.command);
-			g_application_quit(G_APPLICATION(greeter.app));
-			return;
-		case GREETD_RESPONSE_ERROR:
-			set_label_to_field(greeter.response, "description");
-			restart_session();
-			return;
-		case GREETD_RESPONSE_AUTH_MESSAGE:
-			set_label_to_field(greeter.response, "auth_message");
-			break;
-		default:
-			restart_session();
-			return;
-	}
+	gtk_widget_hide(GTK_WIDGET(button));
+	gtk_widget_hide(GTK_WIDGET(greeter.error));
+	restart_session();
 }
 
 void set_label_to_field(struct json_object *object, const char *field)
 {
-	gtk_label_set_text(greeter.label,json_object_get_string(json_object_object_get(object,field)));
+	gtk_label_set_text(greeter.label, json_object_get_string(json_object_object_get(object,field)));
+}
+
+void set_error_to_field(struct json_object *object, const char *field)
+{
+	gtk_label_set_text(greeter.error, json_object_get_string(json_object_object_get(object,field)));
+}
+
+void handle_response(struct json_object *response, enum greetd_request_type request)
+{
+	if (response == NULL) {
+		return;
+	}
+	enum greetd_response_type type = greetd_parse_response_type(response);
+
+	switch (type) {
+		case GREETD_RESPONSE_SUCCESS:
+			switch (request) {
+				case GREETD_REQUEST_CREATE_SESSION:
+				case GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE:
+					start_session();
+					break;
+				case GREETD_REQUEST_START_SESSION:
+					g_application_quit(G_APPLICATION(greeter.app));
+					break;
+				case GREETD_REQUEST_CANCEL_SESSION:
+					break;
+			}
+			break;
+		case GREETD_RESPONSE_ERROR:
+			switch (request) {
+				case GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE:
+				case GREETD_REQUEST_START_SESSION:
+					set_error_to_field(response, "description");
+					gtk_widget_show(GTK_WIDGET(greeter.error));
+					gtk_widget_show(GTK_WIDGET(greeter.ok));
+					gtk_widget_hide(GTK_WIDGET(greeter.plaintext));
+					gtk_widget_hide(GTK_WIDGET(greeter.password));
+					break;
+				case GREETD_REQUEST_CREATE_SESSION:
+					g_application_quit(G_APPLICATION(greeter.app));
+					break;
+				case GREETD_REQUEST_CANCEL_SESSION:
+					break;
+			}
+			break;
+		case GREETD_RESPONSE_AUTH_MESSAGE:
+			switch (greetd_parse_auth_message_type(response)) {
+				case GREETD_AUTH_MESSAGE_VISIBLE:
+					set_label_to_field(response, "auth_message");
+					gtk_widget_hide(GTK_WIDGET(greeter.password));
+					gtk_widget_show(GTK_WIDGET(greeter.plaintext));
+					gtk_editable_set_text(GTK_EDITABLE(greeter.plaintext), "");
+					gtk_widget_grab_focus(GTK_WIDGET(greeter.plaintext));
+					break;
+				case GREETD_AUTH_MESSAGE_SECRET:
+					set_label_to_field(response, "auth_message");
+					gtk_widget_hide(GTK_WIDGET(greeter.plaintext));
+					gtk_widget_show(GTK_WIDGET(greeter.password));
+					gtk_editable_set_text(GTK_EDITABLE(greeter.password), "");
+					gtk_widget_grab_focus(GTK_WIDGET(greeter.password));
+					break;
+				case GREETD_AUTH_MESSAGE_INFO:
+				case GREETD_AUTH_MESSAGE_ERROR:
+					set_error_to_field(response, "auth_message");
+					gtk_widget_show(GTK_WIDGET(greeter.error));
+					gtk_widget_show(GTK_WIDGET(greeter.ok));
+					gtk_widget_hide(GTK_WIDGET(greeter.plaintext));
+					gtk_widget_hide(GTK_WIDGET(greeter.password));
+					break;
+				case GREETD_AUTH_MESSAGE_INVALID:
+					break;
+			}
+			break;
+		case GREETD_RESPONSE_INVALID:
+			break;
+	}
+	json_object_put(response);
 }
 
 void create_session()
 {
-	greeter.response = greetd_create_session(greeter.user);
-	switch (greetd_parse_response_type(greeter.response)) {
-		case GREETD_RESPONSE_SUCCESS:
-			g_application_quit(G_APPLICATION(greeter.app));
-			return;
-		case GREETD_RESPONSE_ERROR:
-			greetd_cancel_session();
-			g_application_quit(G_APPLICATION(greeter.app));
-			return;
-		case GREETD_RESPONSE_AUTH_MESSAGE:
-			set_label_to_field(greeter.response, "auth_message");
-			if (greetd_parse_auth_message_type(greeter.response) == GREETD_AUTH_MESSAGE_VISIBLE) {
-				gtk_password_entry_set_show_peek_icon(greeter.entry, true);
-			} else {
-				gtk_password_entry_set_show_peek_icon(greeter.entry, false);
-			}
-			break;
-		default:
-			greetd_cancel_session();
-			g_application_quit(G_APPLICATION(greeter.app));
-			return;
-	}
+	handle_response(greetd_create_session(greeter.user), GREETD_REQUEST_CREATE_SESSION);
+}
+
+void start_session()
+{
+	handle_response(greetd_start_session(greeter.command), GREETD_REQUEST_START_SESSION);
+}
+
+void post_auth_message_response(const char *response)
+{
+	handle_response(greetd_post_auth_message_response(response), GREETD_REQUEST_POST_AUTH_MESSAGE_RESPONSE);
+}
+
+void cancel_session()
+{
+	handle_response(greetd_cancel_session(), GREETD_REQUEST_CANCEL_SESSION);
 }
 
 void restart_session()
 {
-	greetd_cancel_session();
-	greetd_create_session(greeter.user);
+	cancel_session();
+	create_session();
 }

@@ -10,12 +10,23 @@ window.background {
 	padding: 10px;
 }
 
-entry.password {
+entry {
 	background-color: #1B1D1E;
 	border: 2px solid #080800;
 	border-radius: 2px;
 	caret-color: transparent;
 	color: #F8F8F0;
 	font-family: monospace;
+	outline-width: 0;
+}
+
+button {
+	background-color: #1B1D1E;
+	background-image: none;
+	border: 2px solid #080800;
+	border-radius: 2px;
+	color: #F8F8F0;
+	font-family: monospace;
+	font-weight: bold;
 	outline-width: 0;
 }
