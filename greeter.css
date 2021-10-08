@@ -1,0 +1,21 @@
+window.background {
+	background-image: url("file:///usr/share/backgrounds/Moebius/Falls_1080.png");
+	background-position: center;
+}
+
+#border {
+	background-color: #F92672;
+	border: 2px solid #080800;
+	border-radius: 2px;
+	padding: 10px;
+}
+
+entry.password {
+	background-color: #1B1D1E;
+	border: 2px solid #080800;
+	border-radius: 2px;
+	caret-color: transparent;
+	color: #F8F8F0;
+	font-family: monospace;
+	outline-width: 0;
+}

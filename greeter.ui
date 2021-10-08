@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+	<object id="window" class="GtkApplicationWindow">
+		<property name="title">Greeter</property>
+		<child>
+			<object class="GtkBox">
+				<property name="homogeneous">true</property>
+				<child>
+					<object class="GtkBox">
+						<property name="name">border</property>
+						<property name="halign">center</property>
+						<property name="valign">center</property>
+						<property name="homogeneous">true</property>
+						<child>
+							<object id="entry" class="GtkPasswordEntry">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+							</object>
+						</child>
+					</object>
+				</child>
+			</object>
+		</child>
+	</object>
+</interface>

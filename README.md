@@ -1,0 +1,1 @@
+# greetd-mini-greeter
