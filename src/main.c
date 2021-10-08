@@ -22,7 +22,7 @@ void initialise(GtkApplication *app, gpointer data)
 {
 	GError *error = NULL;
 	GtkBuilder *builder = gtk_builder_new();
-	if (gtk_builder_add_from_file(builder, "./greeter.ui", &error) == 0) {
+	if (gtk_builder_add_from_file(builder, GTK_UI_PATH, &error) == 0) {
 		fprintf(stderr, "Error loading UI description: %s\n", error->message);
 		g_clear_error(&error);
 		exit(EXIT_FAILURE);
@@ -35,7 +35,7 @@ void initialise(GtkApplication *app, gpointer data)
 
 	GdkDisplay *display = gtk_widget_get_display(window);
 	GtkCssProvider *css = gtk_css_provider_new();
-	gtk_css_provider_load_from_path(css, "./greeter.css");
+	gtk_css_provider_load_from_path(css, GTK_CSS_PATH);
 	gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
 	g_signal_connect(G_OBJECT(entry), "activate", G_CALLBACK(on_submit_password), NULL);

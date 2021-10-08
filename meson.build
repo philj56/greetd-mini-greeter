@@ -14,6 +14,24 @@ project(
   ],
 )
 
+debug = get_option('buildtype').startswith('debug')
+
+data_location = join_paths(
+  get_option('prefix'),
+  get_option('datadir'),
+  'greetd-mini-greeter'
+)
+
+ui_location = join_paths(
+  debug ? '' : data_location,
+  'greeter.ui'
+)
+
+css_location = join_paths(
+  debug ? '' : data_location,
+  'greeter.css'
+)
+
 add_project_arguments(
   [
     '-pedantic',
@@ -23,6 +41,8 @@ add_project_arguments(
     '-D_POSIX_C_SOURCE=200809L',
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED',
+    '-DGTK_UI_PATH="@0@"'.format(ui_location),
+    '-DGTK_CSS_PATH="@0@"'.format(css_location),
   ],
   language: 'c'
 )
@@ -43,3 +63,6 @@ executable(
   dependencies: [json, gtk, thread],
   install: true
 )
+
+install_data('greeter.ui')
+install_data('greeter.css')
