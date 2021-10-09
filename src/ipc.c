@@ -30,6 +30,12 @@ struct json_object *ipc_submit(struct json_object *request)
 	return resp;
 }
 
+/*
+ * Open a connection to the UNIX socket specified by
+ * the environment variable GREETD_SOCK.
+ *
+ * Returns the socket file descriptor on success, or -1 on failure.
+ */
 int ipc_open(void)
 {
 	char *greetd_sock = getenv("GREETD_SOCK");
@@ -56,6 +62,11 @@ int ipc_open(void)
 	return sock;
 }
 
+/*
+ * Send an IPC request to the specified socket.
+ *
+ * Returns 0 on success, or -1 on failure.
+ */
 int ipc_send(int sock, struct json_object *request)
 {
 	const char *str = json_object_to_json_string(request);
@@ -73,6 +84,11 @@ int ipc_send(int sock, struct json_object *request)
 	return 0;
 }
 
+/*
+ * Receive an IPC response on the specified socket.
+ *
+ * Returns the response on success, or NULL on failure.
+ */
 struct json_object *ipc_receive(int sock)
 {
 	uint32_t len = 0;

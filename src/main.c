@@ -24,14 +24,17 @@ static struct {
 	GtkButton *ok;
 	const char *user;
 	const char *command;
+	const char *css_path;
 } greeter = {
 	.user = "nobody",
 	.command = "false",
+	.css_path = GTK_CSS_PATH,
 };
 
-static GOptionEntry entries[2] = {
+static GOptionEntry entries[3] = {
 	{"user", 'u', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &greeter.user, "The user to login as", ""},
-	{"command", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &greeter.command, "The command to run", ""}
+	{"command", 'c', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &greeter.command, "The command to run", ""},
+	{"style", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &greeter.css_path, "The css file to use for styling", ""}
 };
 
 int main(int argc, char **argv)
@@ -59,8 +62,8 @@ void initialise(GtkApplication *app, gpointer data)
 		exit(EXIT_FAILURE);
 	}
 
-	GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
-	gtk_window_set_application(GTK_WINDOW(window), app);
+	GtkWindow *window = GTK_WINDOW(gtk_builder_get_object(builder, "window"));
+	gtk_window_set_application(window, app);
 
 	greeter.label = GTK_LABEL(gtk_builder_get_object(builder, "message"));
 	greeter.error = GTK_LABEL(gtk_builder_get_object(builder, "error"));
@@ -68,16 +71,16 @@ void initialise(GtkApplication *app, gpointer data)
 	greeter.plaintext = GTK_ENTRY(gtk_builder_get_object(builder, "plaintext"));
 	greeter.ok = GTK_BUTTON(gtk_builder_get_object(builder, "ok"));
 
-	GdkDisplay *display = gtk_widget_get_display(window);
+	GdkDisplay *display = gtk_widget_get_display(GTK_WIDGET(window));
 	GtkCssProvider *css = gtk_css_provider_new();
-	gtk_css_provider_load_from_path(css, GTK_CSS_PATH);
+	gtk_css_provider_load_from_path(css, greeter.css_path);
 	gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
 	g_signal_connect(G_OBJECT(greeter.password), "activate", G_CALLBACK(on_submit_answer), app);
 	g_signal_connect(G_OBJECT(greeter.plaintext), "activate", G_CALLBACK(on_submit_answer), app);
 	g_signal_connect(G_OBJECT(greeter.ok), "clicked", G_CALLBACK(on_confirm), app);
 
-	gtk_widget_show(window);
+	gtk_widget_show(GTK_WIDGET(window));
 	create_session();
 }
 

@@ -1,7 +1,10 @@
+/* Could set a background image like so: */
+/*
 window.background {
-	background-image: url("file:///usr/share/backgrounds/Moebius/Falls_1080.png");
+	background-image: url("file:///usr/share/backgrounds/background.png");
 	background-position: center;
 }
+*/
 
 #border {
 	background-color: #F92672;
