@@ -41,9 +41,9 @@ following sway config lines produce a nice look:
 default_border none
 hide_edge_borders both
 
-# If using a background image for greetd-mini-greeter, to remove the initial
-# flicker of grey
-# output * background /path/to/image fill
+# If using a background image for greetd-mini-greeter,
+# to remove the initial flicker of grey
+output * background /path/to/image fill
 ```
 
 # AUTHORS
