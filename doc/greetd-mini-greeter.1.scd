@@ -38,11 +38,11 @@ When using sway as the compositor for greetd-mini-greeter, something like the
 following sway config lines produce a nice look:
 
 ```
+# Remove any window borders
 default_border none
 hide_edge_borders both
 
-# If using a background image for greetd-mini-greeter,
-# to remove the initial flicker of grey
+# Add a background image
 output * background /path/to/image fill
 ```
 
