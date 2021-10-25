@@ -1,6 +1,6 @@
 # greetd-mini-greeter
 
-An extremely simple GTK4 greeter for greetd, inspired by
+An extremely simple GTK3/4 greeter for greetd, inspired by
 [lightdm-mini-greeter](https://github.com/prikhi/lightdm-mini-greeter).
 
 ![Screenshot](screenshot.png)

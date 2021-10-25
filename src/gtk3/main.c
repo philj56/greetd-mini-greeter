@@ -1,11 +1,12 @@
-#include "greetd.h"
+#include "../greetd.h"
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <json-c/json_object.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 static void initialise(GtkApplication *app, gpointer data);
-static void on_submit_answer(GtkPasswordEntry *entry, gpointer data);
+static void on_submit_answer(GtkEntry *entry, gpointer data);
 static void on_confirm(GtkButton *button, gpointer data);
 static void set_label_to_field(struct json_object *object, const char *field);
 static void set_error_to_field(struct json_object *object, const char *field);
@@ -19,8 +20,7 @@ static struct {
 	GtkApplication *app;
 	GtkLabel *label;
 	GtkLabel *error;
-	GtkPasswordEntry *password;
-	GtkEntry *plaintext;
+	GtkEntry *password;
 	GtkButton *ok;
 	const char *user;
 	const char *command;
@@ -56,7 +56,7 @@ void initialise(GtkApplication *app, gpointer data)
 
 	GError *error = NULL;
 	GtkBuilder *builder = gtk_builder_new();
-	if (gtk_builder_add_from_file(builder, GTK_UI_PATH, &error) == 0) {
+	if (gtk_builder_add_from_file(builder, GTK3_UI_PATH, &error) == 0) {
 		fprintf(stderr, "Error loading UI description: %s\n", error->message);
 		g_clear_error(&error);
 		exit(EXIT_FAILURE);
@@ -67,26 +67,27 @@ void initialise(GtkApplication *app, gpointer data)
 
 	greeter.label = GTK_LABEL(gtk_builder_get_object(builder, "message"));
 	greeter.error = GTK_LABEL(gtk_builder_get_object(builder, "error"));
-	greeter.password = GTK_PASSWORD_ENTRY(gtk_builder_get_object(builder, "password"));
-	greeter.plaintext = GTK_ENTRY(gtk_builder_get_object(builder, "plaintext"));
+	greeter.password = GTK_ENTRY(gtk_builder_get_object(builder, "password"));
 	greeter.ok = GTK_BUTTON(gtk_builder_get_object(builder, "ok"));
 
-	GdkDisplay *display = gtk_widget_get_display(GTK_WIDGET(window));
+	GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
 	GtkCssProvider *css = gtk_css_provider_new();
-	gtk_css_provider_load_from_path(css, greeter.css_path);
-	gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+	gtk_css_provider_load_from_path(css, greeter.css_path, NULL);
+	gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(css), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 
 	g_signal_connect(G_OBJECT(greeter.password), "activate", G_CALLBACK(on_submit_answer), app);
-	g_signal_connect(G_OBJECT(greeter.plaintext), "activate", G_CALLBACK(on_submit_answer), app);
 	g_signal_connect(G_OBJECT(greeter.ok), "clicked", G_CALLBACK(on_confirm), app);
 
-	gtk_widget_show(GTK_WIDGET(window));
+	gtk_widget_show_all(GTK_WIDGET(window));
+	gtk_widget_hide(GTK_WIDGET(greeter.error));
+	gtk_widget_hide(GTK_WIDGET(greeter.ok));
+	gtk_widget_hide(GTK_WIDGET(greeter.label));
 	create_session();
 }
 
-void on_submit_answer(GtkPasswordEntry *entry, gpointer data)
+void on_submit_answer(GtkEntry *entry, gpointer data)
 {
-	post_auth_message_response(gtk_editable_get_text(GTK_EDITABLE(entry)));
+	post_auth_message_response(gtk_entry_get_text(entry));
 }
 
 void on_confirm(GtkButton *button, gpointer data)
@@ -134,7 +135,6 @@ void handle_response(struct json_object *response, enum greetd_request_type requ
 					set_error_to_field(response, "description");
 					gtk_widget_show(GTK_WIDGET(greeter.error));
 					gtk_widget_show(GTK_WIDGET(greeter.ok));
-					gtk_widget_hide(GTK_WIDGET(greeter.plaintext));
 					gtk_widget_hide(GTK_WIDGET(greeter.password));
 					break;
 				case GREETD_REQUEST_CREATE_SESSION:
@@ -148,16 +148,14 @@ void handle_response(struct json_object *response, enum greetd_request_type requ
 			switch (greetd_parse_auth_message_type(response)) {
 				case GREETD_AUTH_MESSAGE_VISIBLE:
 					set_label_to_field(response, "auth_message");
-					gtk_widget_hide(GTK_WIDGET(greeter.password));
-					gtk_widget_show(GTK_WIDGET(greeter.plaintext));
-					gtk_editable_set_text(GTK_EDITABLE(greeter.plaintext), "");
-					gtk_widget_grab_focus(GTK_WIDGET(greeter.plaintext));
+					gtk_entry_set_text(greeter.password, "");
+					gtk_entry_set_visibility(greeter.password, true);
+					gtk_widget_grab_focus(GTK_WIDGET(greeter.password));
 					break;
 				case GREETD_AUTH_MESSAGE_SECRET:
 					set_label_to_field(response, "auth_message");
-					gtk_widget_hide(GTK_WIDGET(greeter.plaintext));
-					gtk_widget_show(GTK_WIDGET(greeter.password));
-					gtk_editable_set_text(GTK_EDITABLE(greeter.password), "");
+					gtk_entry_set_text(greeter.password, "");
+					gtk_entry_set_visibility(greeter.password, false);
 					gtk_widget_grab_focus(GTK_WIDGET(greeter.password));
 					break;
 				case GREETD_AUTH_MESSAGE_INFO:
@@ -165,7 +163,6 @@ void handle_response(struct json_object *response, enum greetd_request_type requ
 					set_error_to_field(response, "auth_message");
 					gtk_widget_show(GTK_WIDGET(greeter.error));
 					gtk_widget_show(GTK_WIDGET(greeter.ok));
-					gtk_widget_hide(GTK_WIDGET(greeter.plaintext));
 					gtk_widget_hide(GTK_WIDGET(greeter.password));
 					break;
 				case GREETD_AUTH_MESSAGE_INVALID:

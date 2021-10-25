@@ -2,7 +2,7 @@ greetd-mini-greeter(1)
 
 # NAME
 
-greetd-mini-greeter - An extremely simple GTK4 greeter for greetd
+greetd-mini-greeter - An extremely simple GTK3/4 greeter for greetd
 
 # SYNOPSIS
 
@@ -10,7 +10,7 @@ greetd-mini-greeter - An extremely simple GTK4 greeter for greetd
 
 # DESCRIPTION
 
-greetd-mini-greeter is a GTK4 greeter for greetd, designed for a single user.
+greetd-mini-greeter is a GTK3/4 greeter for greetd, designed for a single user.
 
 greetd-mini-greeter requires a Wayland compositor to run, such as *sway*(1).
 

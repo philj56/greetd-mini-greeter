@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+	<object id="window" class="GtkApplicationWindow">
+		<property name="title">Greeter</property>
+		<child>
+			<object class="GtkBox">
+				<property name="homogeneous">true</property>
+				<child>
+					<object class="GtkBox">
+						<property name="name">border</property>
+						<property name="halign">center</property>
+						<property name="valign">center</property>
+						<property name="homogeneous">true</property>
+						<property name="orientation">vertical</property>
+						<child>
+							<object id="message" class="GtkLabel">
+								<property name="visible">false</property>
+							</object>
+						</child>
+						<child>
+							<object id="password" class="GtkEntry">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+								<property name="visible">false</property>
+								<property name="visibility">false</property>
+							</object>
+						</child>
+						<child>
+							<object id="error" class="GtkLabel">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+								<property name="visible">false</property>
+							</object>
+						</child>
+						<child>
+							<object id="ok" class="GtkButton">
+								<property name="halign">center</property>
+								<property name="valign">center</property>
+								<property name="label">OK</property>
+								<property name="visible">false</property>
+							</object>
+						</child>
+					</object>
+				</child>
+			</object>
+		</child>
+	</object>
+</interface>

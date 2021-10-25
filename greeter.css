@@ -1,6 +1,5 @@
 window.background {
 	background-color: transparent;
-
 }
 
 #border {
@@ -14,6 +13,7 @@ entry {
 	background-color: #1B1D1E;
 	border: 2px solid #080800;
 	border-radius: 2px;
+	box-shadow: none;
 	caret-color: transparent;
 	color: #F8F8F0;
 	font-family: monospace;

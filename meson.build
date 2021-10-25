@@ -27,6 +27,11 @@ ui_location = join_paths(
   'greeter.ui'
 )
 
+gtk3_ui_location = join_paths(
+  debug ? '' : data_location,
+  'greeter-gtk3.ui'
+)
+
 css_location = join_paths(
   debug ? '' : data_location,
   'greeter.css'
@@ -42,28 +47,45 @@ add_project_arguments(
     '-DGDK_DISABLE_DEPRECATED',
     '-DGTK_DISABLE_DEPRECATED',
     '-DGTK_UI_PATH="@0@"'.format(ui_location),
+    '-DGTK3_UI_PATH="@0@"'.format(gtk3_ui_location),
     '-DGTK_CSS_PATH="@0@"'.format(css_location),
   ],
   language: 'c'
 )
 
-sources = files(
-  'src/main.c',
+common_sources = files(
   'src/ipc.c',
   'src/greetd.c'
 )
 
+gtk3_sources = files(
+  'src/gtk3/main.c',
+)
+
+gtk4_sources = files(
+  'src/gtk4/main.c',
+)
+
 json = dependency('json-c')
-gtk = dependency('gtk4')
+gtk3 = dependency('gtk+-3.0')
+gtk4 = dependency('gtk4')
 
 executable(
   'greetd-mini-greeter',
-  sources,
-  dependencies: [json, gtk],
+  [common_sources, gtk4_sources],
+  dependencies: [json, gtk4],
+  install: true
+)
+
+executable(
+  'greetd-mini-greeter-gtk3',
+  [common_sources, gtk3_sources],
+  dependencies: [json, gtk3],
   install: true
 )
 
 install_data('greeter.ui')
+install_data('greeter-gtk3.ui')
 install_data('greeter.css')
 
 scdoc = find_program('scdoc', required: get_option('man-pages'))
